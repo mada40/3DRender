@@ -21,10 +21,7 @@ public:
 
 	float* operator[](int i) { return data + i * w; }
 
-	static Matrix CreateViewport(int x, int y, int _w, int _h, int _d);
 	static Matrix identity(int n);
-	
-	//static Matrix lookat(sf::Vector3f eye, sf::Vector3f center, sf::Vector3f up);
 	
 };
 

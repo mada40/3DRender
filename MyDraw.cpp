@@ -1,19 +1,10 @@
 #include"MyDraw.h"
 
-void F() { T5 += 2; }
-void setColor2(unsigned int coor, sf::Uint8*& pixels, const sf::Color& color)
-{
-    int newCoor = coor * 4;
-    pixels[newCoor] = color.r;
-    pixels[newCoor + 1] = color.g;
-    pixels[newCoor + 2] = color.b;
-    pixels[newCoor + 3] = color.a;
-}
 
-void clear(sf::RenderWindow& window, sf::Uint8*& pixels, float* zbuffer, int size)
+void clear(sf::Uint8*& pixels, float* zbuffer, int size)
 {
-    window.clear();
-    std::fill(zbuffer, zbuffer + size, -10000000.f);
+
+    std::fill(zbuffer, zbuffer + size, -1000000.f);
     std::fill(pixels, pixels + size * 4, 0);
 }
 
@@ -55,26 +46,25 @@ void drawTriangle(
     const sf::Vector3i& t0,
     const sf::Vector3i& t1,
     const sf::Vector3i& t2,
-    const sf::Vector2i& tx0,
-    const sf::Vector2i& tx1,
-    const sf::Vector2i& tx2,
+    const sf::Vector2f& tx0,
+    const sf::Vector2f& tx1,
+    const sf::Vector2f& tx2,
     const sf::Image& diffmap,
-    const sf::Image& normal,
-    const sf::Vector3f& light,
+    float intensity,
     sf::Uint8*& pixels, int W, int H, float* zbuffer)
 {
 
     const sf::Uint8* diffArr = diffmap.getPixelsPtr();
-    const sf::Uint8* normArr = normal.getPixelsPtr();
     const int diffW = diffmap.getSize().x;
+    const int diffH = diffmap.getSize().y;
 
     sf::Vector3i tt0 = t0;
     sf::Vector3i tt1 = t1;
     sf::Vector3i tt2 = t2;
 
-    sf::Vector2i ttx0 = tx0;
-    sf::Vector2i ttx1 = tx1;
-    sf::Vector2i ttx2 = tx2;
+    sf::Vector2i ttx0(tx0.x * diffW, tx0.y * diffH);
+    sf::Vector2i ttx1(tx1.x * diffW, tx1.y * diffH);
+    sf::Vector2i ttx2(tx2.x * diffW, tx2.y * diffH);
 
     //сортируем по убыванию
     if (tt0.y < tt1.y) { std::swap(tt0, tt1); std::swap(ttx0, ttx1); }
@@ -144,33 +134,21 @@ void drawTriangle(
                 {
                     z += (B * v1.z + C * v2.z) / A;
                     uvX += (B * uv1.x + C * uv2.x) / A;
-                    uvY += (B * uv1.y + C * uv2.y) / A;
-                    
+                    uvY += (B * uv1.y + C * uv2.y) / A;   
                 }
+                if (uvY < 0 || uvX < 0  || uvY >=  diffH || uvX >= diffW) continue;
 
-                float intensity = 1.f;
                 
                 int coor = (nwY * W + i);
                 if (z > zbuffer[coor])
                 {
-                    if (uvY < 0 || uvX < 0  || uvY > 2047 || uvX > 2047) continue;
                     zbuffer[coor] = z;
    
                     const sf::Uint8* pixel = diffArr + (uvX + uvY * diffW) * 4;
-                    const sf::Uint8* pixel1 = normArr + (uvX + uvY * diffW) * 4;
                     int newCoor = coor * 4;
                     //закрашиваем линию
 
-                    float normX = (pixel1[0] / 255.f - 0.5f) * 2.f;
-                    float normY = (pixel1[1] / 255.f - 0.5f) * 2.f;
-                    float normZ = (pixel1[2] / 255.f - 0.5f) * 2.f;
-                    float len = std::sqrt(normX * normX + normY * normY + normZ * normZ);
-                    sf::Vector3f norm(normX / len, normY / len, normZ / len);
 
-
-                    intensity = norm.x * light.x + norm.y * light.y + norm.z * light.z;
-                    intensity = std::max(intensity, 0.1f);
-                    // = std::min(intensity, 1.f);
                      
                     pixels[newCoor] = 255 * intensity;//r
                     pixels[newCoor + 1] = 255 * intensity;//g
@@ -202,7 +180,6 @@ void drawZbuffer(sf::Uint8* pixels, int W, int H, const float* zbuffer, int d)
     for (int i = 0; i < W * H; i++)
     {
         float deep = 0;
-        //std::cout << (zbuffer[i] > 0.f) << "\n";
         if (zbuffer[i] >= -d/ 2.f)
         {
             deep = zbuffer[i] + d/ 2;
