@@ -18,9 +18,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="model.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="MyDraw.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
@@ -30,14 +27,26 @@
     <ClCompile Include="Camera.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="vecortorAlg.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Controller.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="View.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="button.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="model.h">
-      <Filter>Исходные файлы</Filter>
-    </ClInclude>
     <ClInclude Include="MyDraw.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -48,6 +57,21 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="OBJ_Loader.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="vectorAlg.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Controller.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="View.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="button.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

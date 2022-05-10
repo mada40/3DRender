@@ -1,6 +1,5 @@
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
-#include "model.h"
 #include <SFML/System.hpp>
 #include <string>
 #include <iostream>
@@ -9,91 +8,40 @@
 #include "Matrix.h"
 #include "Camera.h"
 #include "OBJ_Loader.h"
-using namespace std;
-
-void normal(sf::Vector3f& A) {
-    double l = sqrt(A.x * A.x + A.y * A.y + A.z * A.z);
-    A.x /= l;
-    A.y /= l;
-    A.z /= l;
-}
-inline float dot(const sf::Vector3f& a, const sf::Vector3f& b) {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-sf::Vector3f vec_mult(const sf::Vector3f& A, const sf::Vector3f& B) {
-    sf::Vector3f norm;
-    norm.x = (A.y * B.z - A.z * B.y);
-    norm.y = (A.z * B.x - A.x * B.z);
-    norm.z = (A.x * B.y - A.y * B.x);
-    return norm;
-}
-
+#include "vectorAlg.h"
+#include "button.h"
+#include "View.h"
+#include "Scene.h"
 
 int TTT = 0;
 
+const unsigned int W = 1000;
+const unsigned int H = 1000;
+const int K = 1000;
 
-sf::Vector3f eye(0, 0, 3);
+sf::Vector3f eye(0, 0.5f, 2.f);
 sf::Vector3f DirectionOfView(0, 0, -1);//длина обязательна 1
 sf::Vector3f up(0, -1, 0); // не обязательно отогонально DirectionOfView
 
-const unsigned int W = 600;
-const unsigned int H = 600;
-const int K = 1000;
-Camera cam(eye, DirectionOfView, up, 0, 0, min(W, H), min(W, H), K);
+Camera cam(eye, DirectionOfView, up, 0, 0, std::min(W, H), std::min(W, H), K);
+Camera cam2(eye, DirectionOfView, up, 0, 0, std::min(W, H), std::min(W, H), K);
 
-float speed = 0.1f;
-void management()
-{
-    sf::Vector3f temp = vec_mult(cam.directionOfView, cam.up);
-    normal(temp);
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
-        cam.position.y += speed;
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl))
-        cam.position.y -= speed;
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-        cam.position += cam.directionOfView * speed;
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-        cam.position -= cam.directionOfView * speed;
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-        cam.position -= temp * speed;
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-        cam.position += temp * speed;
-
-
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-        cam.rotationX(0.05f);
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-        cam.rotationX(-0.05f);
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-        cam.rotationY(0.05f);
-
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-        cam.rotationY(-0.05f);
-}
-
-
-char arr[2048 * 2048];
 int main()
 {
+    normalize(DirectionOfView);
     objl::Loader Loader;
-    cout << Loader.LoadFile("obj/cottage/cottage_obj.obj") << "--------" << endl;
+    objl::Loader Loader2;
+
+    bool isOpen = Loader.LoadFile("obj/african_head.obj");
+    isOpen &= Loader2.LoadFile("obj/fox.obj");
+
+    if (!isOpen) return 0;
+    
 
     sf::Image diffmap;
-    diffmap.loadFromFile("obj/cottage/cottage_textures/cottage_diffuse.png");
-
-    sf::Image normalMap;
-    normalMap.loadFromFile("obj/cottage/cottage_textures/cottage_normal.png");
-
+    sf::Image diffmap2;
+    diffmap.loadFromFile("obj/african_head_diffuse.tga");
+    diffmap2.loadFromFile("obj/fox_diffuse.png");
 
     sf::RenderWindow window(sf::VideoMode(W, H), "SFML window");
     //window.setFramerateLimit(60);
@@ -103,89 +51,112 @@ int main()
 
     sf::Uint8* pixels = new sf::Uint8[W * H * 4];
     float* zbuffer = new float[W * H];
-    clear(window, pixels, zbuffer, W * H);
+    clear(pixels, zbuffer, W * H);
 
+    sf::Font myfont;
+    myfont.loadFromFile("obj/Roboto/Roboto-Black.ttf");
 
+    gui::button first("FIRST", myfont, sf::Vector2f(500.f, 200.f), gui::style::save);
+    first.setColorNormal(sf::Color::Red);
+    first.setColorTextNormal(sf::Color::Green);
+    first.setBorderColor(sf::Color::Blue);
+    first.setSize(150.f);
+
+    gui::button second("SECOND", myfont, sf::Vector2f(500.f, 500.f), gui::style::save);
+    second.setColorNormal(sf::Color::Red);
+    second.setColorTextNormal(sf::Color::Green);
+    second.setBorderColor(sf::Color::Blue);
+    second.setSize(150.f);
 
 
     sf::Texture texture;
     texture.create(W, H);
     sf::Sprite sprite(texture); // needed to draw the texture on screen
 
-    sf::Vector3f sun(1, 1, 1);
-    normal(sun);
+    sf::Vector3f sun(0, 1, 1);
+    normalize(sun);
+
+    View view(pixels, sf::Vector3i(W, H, K), zbuffer);
 
 
+    bool isOpenMenu = true;
+    int sceneIndex = 0;
+    std::vector<Scene> scenes;
 
-    float T = 0;
-    float a = 0;
+    std::vector<Matrix> arrM;
+    arrM.push_back(Matrix::identity(4));
+    std::vector<objl::Loader> arrL;
+    std::vector<sf::Image> arrD;
+
+    arrL.push_back(Loader);
+    arrD.push_back(diffmap);
+    scenes.push_back(Scene(arrL, arrD, cam, view));
+
+    arrL[0] = (Loader2);
+    arrD[0] = (diffmap2);
+    scenes.push_back(Scene(arrL, arrD, cam2, view));
+ 
     while (window.isOpen())
     {
-        T += 0.05f;
-        sun.x = cos(T);
-        sun.z = sin(T);
-        //sun.z = 0;
-        normal(sun);
-        clear(window, pixels, zbuffer, W * H);
         sf::Event event;
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
                 window.close();
-        }
-        management();
 
         
-        Matrix A = cam.getFinalMatrix();
-
-        for (objl::Mesh mesh : Loader.LoadedMeshes)
-        {
-            for (int i = 0; i < mesh.Indices.size(); i += 3)
-            {
-                sf::Vector3i sc[3];
-                sf::Vector2i tx[3];
-                for (int j = 0; j < 3; j++)
-                {
-                    auto t = mesh.Vertices[mesh.Indices[i + j]];
-                    tx[j] = sf::Vector2i(t.TextureCoordinate.X * 2048, 2048 - t.TextureCoordinate.Y * 2048);
-                    sf::Vector3f temp = sf::Vector3f(t.Position.X / 5.f, t.Position.Y / 5.f, t.Position.Z  /5.f);
-                    temp = (A * Matrix(temp)).getVector();
-                    sc[j] = sf::Vector3i(temp.x, temp.y, temp.z);
-                }
-                
-
-                if (sc[0].z <= 2 * K && sc[0].z > 0.f &&
-                    sc[1].z <= 2 * K && sc[1].z > 0.f &&
-                    sc[2].z <= 2 * K && sc[2].z > 0.f)
-                {
-                    drawTriangle(
-                        sc[0], sc[1], sc[2],
-                        tx[0], tx[1], tx[2],
-                        diffmap, normalMap, sun, pixels, W, H, zbuffer);
-                }
-
-            }
-
-
         }
-     
+        window.clear();
+        clear(pixels, zbuffer, W * H);
 
-
-        //drawZbuffer(pixels, W, H, zbuffer, K);
-
-        texture.update(pixels);
-        window.draw(sprite);
-        window.display();
-
-        
-
+        first.update(event, window);
+        second.update(event, window);
 
         float currentTime = clock.getElapsedTime().asMilliseconds();
-        float fps = 1000.f / (currentTime - lastTime);
+        float deltatime = (currentTime - lastTime);
+        float fps = 1000.f / deltatime;
         lastTime = currentTime;
 
+        if (isOpenMenu)
+        {
+            window.draw(first);
+            window.draw(second);
+
+            if (first.getState() == gui::state::clicked)
+            {
+                isOpenMenu = false;
+                sceneIndex = 0;
+            }
+
+            if (second.getState() == gui::state::clicked)
+            {
+                isOpenMenu = false;
+                sceneIndex = 1;
+            }  
+        }
+        else
+        {
+            normalize(sun);
+
+            scenes[sceneIndex].update(deltatime);
+            scenes[sceneIndex].render(sun, arrM);
+
+            //drawZbuffer(pixels, W, H, zbuffer, K);
+
+            texture.update(pixels);
+            window.draw(sprite);
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+            {
+                isOpenMenu = true;
+            }
+        }
+
+
+        window.display();  
+
         if(TTT % 10 == 0)
-            window.setTitle(to_string(fps));
+            window.setTitle(std::to_string(fps));
 
     }
 

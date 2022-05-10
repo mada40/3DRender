@@ -1,24 +1,25 @@
 #pragma once
 #include "Matrix.h"
+#include "vectorAlg.h"
 class Camera
 {
 private:
 
 	Matrix viewport;
 	Matrix Projection = Matrix::identity(4);
-	Matrix ModelView;
+
+	Matrix CreateViewport(int x, int y, int _w, int _h, int _d);
+	Matrix lookat() const;
+
 public:
 	sf::Vector3f position;
 	sf::Vector3f directionOfView;
 	sf::Vector3f up;
-	void normal(sf::Vector3f& A);
-	sf::Vector3f vec_mult(const sf::Vector3f& A, const sf::Vector3f& B);
-	void lookat();
-	void projection();
+	float speed = 0.01f;
 	Camera();
 	Camera(const sf::Vector3f& pos, const sf::Vector3f& vec, const sf::Vector3f& u, int x, int y, int w, int h, int d);
 	
-	Matrix getFinalMatrix() { projection(); lookat();  return viewport * Projection * ModelView; }
+	Matrix getFinalMatrix() { return viewport * Projection * lookat(); }
 	void rotationX(float angle);
 	void rotationY(float angle);
 	void rotationZ(float angle);

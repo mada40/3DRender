@@ -17,14 +17,16 @@ public:
 
 	Matrix& operator=(const Matrix& other);
 	Matrix operator*(const Matrix& other) const;
+	sf::Vector3f operator*(const sf::Vector3f& other) const;
+	Matrix operator/(float c) const { Matrix ans(w, h);  int size = w * h; for (int i = 0; i < size; i++) ans.data[i] = data[i] / c; return ans; }
 	sf::Vector3f getVector() const { return sf::Vector3f(data[0] / data[3], data[1] / data[3], data[2] / data[3]); }
 
 	float* operator[](int i) { return data + i * w; }
+	float* operator[](int i) const { return data + i * w; }
 
-	static Matrix CreateViewport(int x, int y, int _w, int _h, int _d);
-	static Matrix identity(int n);
-	
-	//static Matrix lookat(sf::Vector3f eye, sf::Vector3f center, sf::Vector3f up);
-	
+	static float det3x3(const Matrix& other);
+	static Matrix inverseTransposeMatrix4x4(const Matrix& m);
+	float getMinorForMatrix4x4(int y, int x) const;
+	static Matrix identity(int n);	
 };
 
